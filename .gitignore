@@ -1,0 +1,8 @@
+node_modules/
+.npm-cache/
+npm-debug.log*
+.clasprc.json
+.clasprc.*.json
+.clasp.json
+
+dist/

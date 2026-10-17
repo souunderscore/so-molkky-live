@@ -1,0 +1,17 @@
+{
+  "name": "so-molkky-live",
+  "version": "0.6.0",
+  "private": true,
+  "description": "GAS application and browser-only GitHub Pages migration for Live Scheduler",
+  "scripts": {
+    "test": "node tests/smoke.cjs && npm run build:pages && node tests/pages.cjs",
+    "build:pages": "node scripts/build-pages.cjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@google/clasp": "3.4.1",
+    "jsdom": "27.0.1"
+  }
+}
