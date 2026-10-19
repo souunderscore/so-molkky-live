@@ -303,6 +303,10 @@
       if (!d || d.v !== 6 || !Array.isArray(d.rows) || d.rows.length > 50) throw Error('下書きの形式が不正です');
       const textLimits = { date: 10, event: 200, team: 100, pattern: 300, description: 4900 };
       const clean = { v:6 };
+      if (d.inputText !== undefined) {
+        if (typeof d.inputText !== 'string' || d.inputText.length > 100000) throw Error('貼り付けテキストが不正です');
+        clean.inputText = d.inputText;
+      }
       for (const [k, max] of Object.entries(textLimits)) { if (typeof d[k] !== 'string' || d[k].length > max) throw Error('下書きの入力形式が不正です'); clean[k] = d[k]; }
       if (clean.date && !/^\d{4}-\d{2}-\d{2}$/.test(clean.date)) throw Error('予約日の形式が不正です');
       if (!['public','unlisted','private'].includes(d.privacy) || ![20,25,30,40,60].includes(Number(d.interval)) || !['time','manual'].includes(d.sort)) throw Error('下書きの設定が不正です');
@@ -311,7 +315,18 @@
         requestId(r.id);
         if (!['pending','ok'].includes(r.state)) throw Error('登録失敗の試合があります。移行元のYouTube Studioで登録結果を確認し、解決してから書き出してください');
         if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time || '')) throw Error('下書きの時刻が不正です');
-        const row = { id:r.id, time:r.time, order:i, state:r.state, thumb:null, thumbMode:r.thumbMode === 'inherit' ? 'inherit' : 'none', expanded:false, edited:!!r.edited, thumbnailState:'none', thumbnailError:'', error:'', url:'' };
+        const row = { id:r.id, time:r.time, order:i, state:r.state, thumb:null, thumbMode:['inherit','custom'].includes(r.thumbMode) ? r.thumbMode : 'none', expanded:false, edited:!!r.edited, thumbnailState:'none', thumbnailError:'', error:'', url:'', overrides:{} };
+        if (r.overrides !== undefined) {
+          if (!r.overrides || typeof r.overrides !== 'object' || Array.isArray(r.overrides)) throw Error('個別設定が不正です');
+          for (const [k,max] of Object.entries({date:10,privacy:10,description:4900})) {
+            if (r.overrides[k] !== undefined) {
+              if (typeof r.overrides[k] !== 'string' || r.overrides[k].length > max) throw Error('個別設定が不正です');
+              row.overrides[k] = r.overrides[k];
+            }
+          }
+          if (row.overrides.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(row.overrides.date)) throw Error('個別設定の予約日が不正です');
+          if (row.overrides.privacy !== undefined && !['public','unlisted','private'].includes(row.overrides.privacy)) throw Error('個別設定の公開設定が不正です');
+        }
         for (const k of ['title','round','format','opponent']) { if (typeof r[k] !== 'string' || r[k].length > 300) throw Error('試合の入力形式が不正です'); row[k] = r[k]; }
         if (r.state === 'ok') {
           let u; try { u = new URL(r.url); } catch (_) { throw Error('登録済み動画のURLが不正です'); }
