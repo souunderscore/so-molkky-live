@@ -71,7 +71,6 @@
     view = next; ['create','manage','settings'].forEach(v => $(v+'View').hidden = v !== next);
     $('createNav').setAttribute('aria-pressed', String(next === 'create')); $('manageNav').setAttribute('aria-pressed', String(next === 'manage'));
     if (next === 'manage') { renderManage(); if (!channel.length && client.state().connected) refreshManage(); }
-    if (next === 'settings') loadTemplates();
   }
   $('createNav').onclick = () => showView('create'); $('manageNav').onclick = () => showView('manage');
   $('openSettings').onclick = () => showView('settings'); $('closeSettings').onclick = () => showView(previousView);
@@ -248,10 +247,6 @@
     dirty=false;showStep(rows.length&&($('schedule').value===canonical||rows.some(r=>r.state!=='pending'))?3:1);await showView('create');message('draftStatus','下書きを読み込みました。サムネイル画像は再選択してください。');
   }
   $('loadDraft').onclick=async()=>{if(busy)return;try{const d=JSON.parse(localStorage.getItem(DRAFT)||'null');if(!d)throw Error('保存済み下書きがありません。');await applyDraft(d)}catch(e){message('draftStatus',e.message,true)}};
-  $('exportBackup').onclick=async()=>{if(busy)return;try{const data={format:'live-scheduler-backup',version:1,draft:draft(),templates:await client.call('getTemplates')};client.assertExportable(data);const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=make('a');a.href=url;a.download='live-scheduler-backup.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);message('backupStatus','書き出しました。画像は再選択してください。')}catch(e){message('backupStatus',e.message,true)}};
-  $('importBackup').onclick=async()=>{if(busy)return;try{const file=$('importBackupFile').files[0];if(!file)throw Error('書き出しファイルを選択してください。');if(file.size>1024*1024)throw Error('ファイルが大きすぎます。');const data=JSON.parse(await file.text());if(!await confirmAction('設定・下書きを読み込みますか？','保存済み下書き・テンプレートを置き換えます。入力中の内容はそのままです。','読み込む'))return;const result=client.importBackup(data);message('backupStatus',result.rowCount+'件の下書きを保存しました。「下書きを読み込む」で開けます。');loadTemplates()}catch(e){message('backupStatus',e.message,true)}};
-  async function loadTemplates(){try{const list=await client.call('getTemplates');$('templatesList').replaceChildren();for(const t of list){const c=make('div',undefined,'card');c.append(make('h3',t.name));const actions=make('div',undefined,'actions'),use=make('button','使用する'),del=make('button','削除');use.onclick=async()=>{if(busy||!await confirmAction('共通設定を適用しますか？','公開設定・説明文を置き換えます。','適用'))return;$('privacy').value=t.privacy;$('description').value=t.description;markDirty();showStep(2);showView('create')};del.onclick=async()=>{if(busy||!await confirmAction('テンプレートを削除',t.name,'削除'))return;try{await client.call('deleteTemplate',t.id);loadTemplates()}catch(e){message('backupStatus',e.message,true)}};actions.append(use,del);c.append(actions);$('templatesList').append(c)}}catch(e){$('templatesList').replaceChildren(make('p',e.message,'error'))}}
-  $('saveTemplate').onclick=async()=>{if(busy)return;try{await client.call('saveTemplate',{name:$('templateName').value,event:'',team:'',pattern:'',description:$('description').value,privacy:$('privacy').value,interval:30});$('templateName').value='';loadTemplates()}catch(e){message('backupStatus',e.message,true)}};
   async function refreshRecovery(){
     if(recoveryLoading||busy||!client.state().connected)return;recoveryLoading=true;
     try{const records=await client.call('getUncertainRecords');$('recoveryPanel').hidden=!records.length;const signature=JSON.stringify(records);if(signature===recoverySignature)return;recoverySignature=signature;$('uncertainList').replaceChildren();
