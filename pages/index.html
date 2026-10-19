@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1019"><title>Live Scheduler</title><link rel="stylesheet" href="app.css"></head>
+<body><div class="app">
+<header><div class="brand"><h1>Live Scheduler</h1><button id="openSettings" class="quiet">設定</button></div><p class="muted">YouTubeの試合予約</p>
+<div class="connection"><span id="connectionStatus" role="status">未接続</span><button id="connectGoogle">Googleに接続</button></div>
+<nav class="tabs" aria-label="画面切り替え"><button id="createNav" aria-pressed="true">予約作成</button><button id="manageNav" aria-pressed="false">予約管理</button></nav></header>
+<main><section id="createView">
+<ol id="steps" class="steps" aria-label="予約作成の手順"><li aria-current="step">1 入力</li><li>2 配信設定</li><li>3 確認</li></ol>
+<section id="inputStep" class="step"><h2>時刻とタイトルを入力</h2><p class="muted">1件から作成できます。複数件は続けて入力してください。コピーした一覧も貼り付けられます。</p>
+<label for="schedule">試合スケジュール</label><textarea id="schedule" rows="10" placeholder="時刻&#10;タイトル&#10;&#10;時刻&#10;タイトル" spellcheck="false"></textarea><p class="muted">時刻の次の行にタイトルを入力。試合の間は空行を入れても構いません。</p>
+<details><summary>入力例を見る</summary><pre id="exampleText"></pre><button id="insertExample">入力例を入れる</button></details><p id="inputError" class="error" role="alert"></p></section>
+<section id="settingsStep" class="step" hidden><h2>共通の配信設定</h2><p class="muted">すべての試合に適用します。次の画面で、試合ごとに変更できます。</p>
+<label for="date">予約日（日本時間）</label><input id="date" type="date"><label for="privacy">公開設定</label><select id="privacy"><option value="public">公開</option><option value="unlisted">限定公開</option><option value="private">非公開</option></select>
+<label for="description">説明文 <span class="muted">任意</span></label><textarea id="description" rows="3" maxlength="4900"></textarea><label for="commonThumb">共通サムネイル <span class="muted">任意</span></label><input id="commonThumb" type="file" accept="image/*"><img id="commonPreview" class="thumbnail" alt="共通サムネイル" hidden><p class="muted">画像は送信前に縮小・圧縮します。下書きには保存されません。</p><p id="settingsError" class="error" role="alert"></p></section>
+<section id="reviewStep" class="step" hidden><h2>内容を確認して予約</h2><p class="muted">時刻・タイトルを直接修正できます。設定を変える試合だけ「個別設定」を開いてください。</p><div id="commonSummary" class="card"></div><div id="matches"></div></section>
+<section id="completeStep" hidden><h2 id="completeTitle">予約結果</h2><div id="results" aria-live="polite"></div><button id="retryFailed" hidden>失敗分を再試行</button><button id="goManage" class="primary full">作成した予約を確認・編集する</button><button id="returnReview" class="full">予約内容に戻る</button></section>
+<footer id="createFooter"><div class="bar"><button id="back" class="quiet" hidden>← 戻る</button><span id="count" class="muted">0件</span></div><button id="next" class="primary full">試合を読み取る →</button><p id="progress" role="status" aria-live="polite"></p></footer>
+<div class="draft-actions"><button id="saveDraft">下書き保存</button><button id="loadDraft">下書きを読み込む</button></div><p id="draftStatus" class="muted" role="status">下書きはこのブラウザだけに保存します。</p></section>
+<section id="manageView" hidden><div class="bar"><h2>予約管理</h2><button id="refresh">更新</button></div><p class="muted">予約を開いて、確認・編集できます。</p>
+<div class="pair"><div><label for="statusFilter">表示する状態</label><select id="statusFilter"><option value="scheduled">予約済み</option><option value="live">配信中</option><option value="complete">終了済み</option><option value="all">すべて</option></select></div><div><label for="manageSort">開始日時</label><select id="manageSort"><option value="asc">早い順</option><option value="desc">遅い順</option></select></div></div>
+<label for="filter">タイトル検索</label><input id="filter" type="search"><p id="manageStatus" class="muted" role="status"></p><div class="bar"><span id="bulkCount" role="status">0件選択</span><button id="clearSelection" class="quiet">選択解除</button></div><button id="bulkDelete" class="danger full" disabled>選択した0件を削除</button><div id="broadcasts"></div></section>
+<section id="settingsView" hidden><div class="bar"><h2>設定</h2><button id="closeSettings">閉じる</button></div>
+<details id="connectionSettings"><summary>Google連携設定</summary><label for="oauthClientId">クライアントID</label><input id="oauthClientId" autocomplete="off" spellcheck="false" autocapitalize="none"><p class="muted">初回のみ設定します。接続情報はページを閉じると失われます。</p><a href="https://github.com/souunderscore/so-molkky-live/blob/main/docs/pages-migration.md" target="_blank" rel="noopener noreferrer">設定手順</a><button id="disconnectGoogle" class="full">接続を解除</button></details>
+<details><summary>共通設定テンプレート</summary><p class="muted">公開設定・説明文を保存します。画像・日付は含みません。</p><label for="templateName">テンプレート名</label><input id="templateName"><button id="saveTemplate" class="full">現在の共通設定を保存</button><div id="templatesList"></div></details>
+<details><summary>設定・下書きの引き継ぎ</summary><button id="exportBackup" class="full">設定・下書きを書き出す</button><label for="importBackupFile">書き出しファイル</label><input id="importBackupFile" type="file" accept=".json,application/json"><button id="importBackup" class="full">設定・下書きを読み込む</button><p class="muted">画像は再選択してください。</p><p id="backupStatus" role="status"></p></details></section>
+<section id="recoveryPanel" class="card" hidden><h2>登録結果の確認</h2><p>通信が途切れた予約があります。YouTube Studioで登録結果を確認してください。</p><a href="https://studio.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Studioを開く</a><div id="uncertainList"></div></section>
+</main></div>
+<dialog id="confirmDialog"><h2 id="confirmTitle"></h2><div id="confirmContent"></div><div class="actions"><button id="cancelConfirm">キャンセル</button><button id="acceptConfirm" class="primary">実行</button></div></dialog>
+<script src="client.js"></script><script src="ui.js"></script><script src="https://accounts.google.com/gsi/client" async></script>
+</body></html>
